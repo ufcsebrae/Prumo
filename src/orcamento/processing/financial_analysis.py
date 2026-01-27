@@ -19,7 +19,7 @@ def calculate_financial_summary(
 
     # Alinha os dados, preenchendo meses sem dados com 0 para segurança
     series_receitas_total, series_despesas_total = series_receitas_total.align(
-        series_despesas_total, fill_value=0
+        series_despesas_total, fill_value=pd.NA
     )
     
     # 2. Calcula o superávit/déficit padrão

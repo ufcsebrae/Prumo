@@ -9,7 +9,7 @@ DB_CONFIG = {
 
 # --- Configurações de E-mail ---
 EMAIL_CONFIG = {
-    'recipient': "cesargl@sp.sebrae.com.br",
+    'recipient': "orcamento@sp.sebrae.com.br",
     'subject_prefix': "Prévia Orçamento"
 }
 
