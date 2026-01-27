@@ -15,3 +15,7 @@ __pycache__/
 # Arquivos de configuração de IDEs (Opcional, mas boa prática)
 .vscode/
 .idea/
+
+
+# Arquivos de build do setuptools
+*.egg-info/
