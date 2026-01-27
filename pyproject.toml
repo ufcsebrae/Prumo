@@ -1,0 +1,17 @@
+[project]
+name = "prumo"
+version = "2.0.0"
+description = "Sistema de geração de relatórios financeiros."
+authors = [{ name = "Cesar Augusto Galeskas Lopes", email = "cesargl@sebraesp.com.br" }]
+requires-python = ">=3.9"
+dependencies = [
+    "pandas",
+    "sqlalchemy",
+    "pyodbc",
+    "pydantic-settings",
+    "jinja2",
+    "pywin32",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

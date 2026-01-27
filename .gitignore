@@ -1,2 +1,17 @@
-__pycache__
-.venv
+# Ambiente Virtual
+.venv/
+venv/
+
+# Arquivo de configuração com segredos
+.env
+
+# Arquivos de cache do Python
+__pycache__/
+*.pyc
+
+# Arquivos de log
+*.log
+
+# Arquivos de configuração de IDEs (Opcional, mas boa prática)
+.vscode/
+.idea/

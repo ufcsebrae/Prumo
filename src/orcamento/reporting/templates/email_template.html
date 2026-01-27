@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ assunto }}</title>
+    <style>
+        /* Estilos Gerais */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Estilos das Seções de Tabela */
+        .table-section {
+            margin-top: 30px;
+        }
+
+        .table-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #005691; /* Azul Sebrae */
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        /* Estilos da Tabela (Bootstrap-like) */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .table th, .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .table td:not(:first-child), .table th:not(:first-child) {
+            text-align: right; /* Alinha valores numéricos à direita */
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .table-striped tbody tr:hover {
+            background-color: rgba(0, 86, 145, 0.1); /* Destaque ao passar o mouse */
+        }
+        
+        /* Estilos do Rodapé */
+        .email-footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- O Jinja2 substituirá esta variável pelo texto gerado no Python -->
+        {{ texto_email | safe }}
+
+        <div class="table-section">
+            <div class="table-title">Receitas Mensais</div>
+            <!-- O Jinja2 substituirá esta variável pela tabela HTML de receitas -->
+            {{ tabela_receitas | safe }}
+        </div>
+        
+        <div class="table-section">
+            <div class="table-title">Despesas Mensais</div>
+            <!-- O Jinja2 substituirá esta variável pela tabela HTML de despesas -->
+            {{ tabela_despesas | safe }}
+        </div>
+        
+        <div class="table-section">
+            <div class="table-title">Superávit / Déficit Mensal</div>
+            <!-- O Jinja2 substituirá esta variável pela tabela HTML de resumo -->
+            {{ tabela_resumo | safe }}
+        </div>
+    </div>
+    
+    <div class="email-footer">
+        ESTE E-MAIL FOI GERADO AUTOMATICAMENTE. POR FAVOR, NÃO RESPONDA.
+    </div>
+</body>
+</html>
