@@ -16,38 +16,44 @@ MONTH_MAP = {
     7: 'jul', 8: 'ago', 9: 'set', 10: 'out', 11: 'nov', 12: 'dez'
 }
 
+# src/orcamento/main.py
+
 def run_financial_report_flow(year: int) -> None:
     """Orquestra o fluxo de geração e envio do relatório financeiro."""
     logger = logging.getLogger(__name__)
     logger.info("🚀 Iniciando processo para o ano de %d...", year)
 
     try:
-        # 1. SETUP: Carrega configs, queries e engine do banco
         queries = get_queries()
         engine = get_engine(settings.db)
 
-        # 2. EXTRAÇÃO: Busca dados brutos do banco
         params = {"year": year}
         df_receitas_raw = execute_query(engine, queries["RECEITAS"].sql, params)
         df_despesas_raw = execute_query(engine, queries["DESPESAS"].sql, params)
 
-        # 3. PROCESSAMENTO: Realiza os cálculos de negócio
         df_resumo_raw = calculate_financial_summary(df_receitas_raw, df_despesas_raw)
 
-        # 4. FORMATAÇÃO: Prepara os dados para a apresentação
+        # --- CÁLCULO DOS KPIs PARA O SUMÁRIO EXECUTIVO ---
+        kpis = {"receita_total": 0, "despesa_total": 0, "resultado_mes": 0}
+        if not df_receitas_raw.empty:
+            kpis["receita_total"] = df_receitas_raw['Valor'].sum()
+        if not df_despesas_raw.empty:
+            kpis["despesa_total"] = df_despesas_raw['Valor'].sum()
+        kpis["resultado_mes"] = kpis["receita_total"] - kpis["despesa_total"]
+        # ---------------------------------------------------
+
         logger.info("🎨 Formatando dados para o relatório HTML...")
         df_receitas_fmt = pivot_and_format_financial_df(df_receitas_raw, MONTH_MAP)
         df_despesas_fmt = pivot_and_format_financial_df(df_despesas_raw, MONTH_MAP)
         df_resumo_fmt = pivot_and_format_financial_df(df_resumo_raw, MONTH_MAP)
         
-        # 5. GERAÇÃO DO RELATÓRIO: Converte DataFrames para tabelas HTML
         tabelas_html = {
             "tabela_receitas": style_df_to_html(df_receitas_fmt),
             "tabela_despesas": style_df_to_html(df_despesas_fmt),
-            "tabela_resumo": style_df_to_html(df_resumo_fmt),
+            # Passa um identificador para a função de estilo saber quando colorir
+            "tabela_resumo": style_df_to_html(df_resumo_fmt, table_type='resumo'),
         }
 
-        # 6. ENVIO: Prepara e envia o e-mail
         today_str = datetime.now().strftime('%d/%m/%Y')
         subject = f"{settings.email.subject_prefix} - {today_str}"
         
@@ -63,6 +69,8 @@ def run_financial_report_flow(year: int) -> None:
             template_context={
                 "assunto": subject,
                 "texto_email": texto_email,
+                "kpis": kpis,
+                "settings": settings,  # <--- ESTA É A LINHA QUE FALTAVA
                 **tabelas_html,
             },
         )
@@ -72,6 +80,7 @@ def run_financial_report_flow(year: int) -> None:
         sys.exit(1)
 
     logger.info("✅ Processo concluído com sucesso!")
+
 
 def main() -> None:
     """Ponto de entrada da aplicação."""

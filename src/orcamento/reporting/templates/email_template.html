@@ -5,96 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ assunto }}</title>
     <style>
-        /* Estilos Gerais */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 950px;
-            margin: auto;
-            background-color: #ffffff;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: auto; background-color: #ffffff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         p { font-size: 16px; line-height: 1.6; }
 
-        /* Estilos das Seções de Tabela */
-        .table-section { margin-top: 30px; }
-        .table-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #005691; /* Azul Sebrae */
-            margin-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 10px;
-        }
+        /* KPI CARDS */
+        .kpi-container { display: flex; justify-content: space-between; gap: 20px; margin: 25px 0; }
+        .kpi-card { flex-grow: 1; padding: 15px; border-radius: 6px; text-align: center; border: 1px solid #e9ecef; }
+        .kpi-card-title { font-size: 14px; color: #6c757d; margin-bottom: 8px; }
+        .kpi-card-value { font-size: 24px; font-weight: bold; color: #212529; }
+        .color-positive { color: {{ settings.colors.positive }}; }
+        .color-negative { color: {{ settings.colors.negative }}; }
 
         /* Estilos da Tabela */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        .table th, .table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #dee2e6;
-            white-space: nowrap; /* Impede que o conteúdo quebre linha */
-        }
+        .table-section { margin-top: 30px; }
+        .table-title { font-size: 20px; font-weight: bold; color: #005691; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .table th, .table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; white-space: nowrap; }
         .table th { background-color: #f8f9fa; font-weight: bold; color: #495057; }
         .table td:not(:first-child), .table th:not(:first-child) { text-align: right; }
-        .table-striped tbody tr:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.03); }
-        
-        /* DESTAQUE VISUAL PARA TOTAIS */
-        .table tbody tr:last-child {
-            font-weight: bold;
-            background-color: #e9f5ff !important; /* Fundo azul claro para a linha TOTAL GERAL */
-        }
-        .table td:last-child, .table th:last-child {
-            font-weight: bold;
-        }
+        .table-striped tbody tr:nth-of-type(odd) { background-color: rgba(0,0,0,0.03); }
+        .table tbody tr:last-child { font-weight: bold; background-color: #e9f5ff !important; }
+        .table td:last-child, .table th:last-child { font-weight: bold; }
 
-        /* RODAPÉ */
+        /* Linhas de Coluna Verticais (Visualização PC) */
+        .table-grid th, .table-grid td { border-right: 1px solid #e9ecef; }
+        .table-grid th:last-child, .table-grid td:last-child { border-right: none; }
+
+        /* Dica de Scroll no Mobile */
+        .mobile-only-hint { display: none; font-size: 13px; font-weight: normal; color: #6c757d; }
+
         .email-footer { text-align: center; margin-top: 30px; font-size: 12px; color: #888; }
 
-        /* ======== MELHORIA DE RESPONSIVIDADE PARA CELULAR ======== */
         @media screen and (max-width: 600px) {
             .container { padding: 15px; }
-            .table-section {
-                overflow-x: auto; /* Permite que a tabela deslize horizontalmente */
-                -webkit-overflow-scrolling: touch; /* Melhora a experiência em iOS */
-                border: 1px solid #dee2e6;
-                border-radius: 4px;
+            .kpi-container { flex-direction: column; }
+            .mobile-only-hint { display: inline; }
+            
+            /* --- NOVA LÓGICA DE SCROLL VISUAL --- */
+            .scrollable-table-wrapper {
+                position: relative; /* Necessário para posicionar o pseudo-elemento */
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
-            .table {
-                width: auto; /* A tabela ocupará a largura necessária, não 100% da tela */
-                min-width: 600px; /* Garante que a tabela tenha uma largura mínima para scroll */
+            .scrollable-table-wrapper::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 40px; /* Largura da sombra */
+                /* Gradiente que vai de transparente para branco, simulando um "fade" */
+                background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1) 80%);
+                pointer-events: none; /* Garante que a sombra não impeça o clique no conteúdo abaixo */
             }
+            /* -------------------------------------- */
         }
     </style>
 </head>
 <body>
     <div class="container">
         {{ texto_email | safe }}
-        
+
+        <div class="kpi-container">
+             <div class="kpi-card">
+                <div class="kpi-card-title">RECEITA TOTAL (ACUM.)</div>
+                <div class="kpi-card-value">{{ "R$ {:,.2f}".format(kpis.receita_total).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-card-title">DESPESA TOTAL (ACUM.)</div>
+                <div class="kpi-card-value">{{ "R$ {:,.2f}".format(kpis.despesa_total).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-card-title">RESULTADO (ACUM.)</div>
+                <div class="kpi-card-value {% if kpis.resultado_mes >= 0 %}color-positive{% else %}color-negative{% endif %}">
+                    {{ "R$ {:,.2f}".format(kpis.resultado_mes).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                </div>
+            </div>
+        </div>
+
         <div class="table-section">
-            <div class="table-title">Receitas Mensais</div>
-            {{ tabela_receitas | safe }}
+            <div class="table-title">Superávit / Déficit Mensal <small class="mobile-only-hint">(Deslize para ver)</small></div>
+            <div class="scrollable-table-wrapper">
+                <div class="table-grid">{{ tabela_resumo | safe }}</div>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <div class="table-title">Receitas Mensais <small class="mobile-only-hint">(Deslize para ver)</small></div>
+            <div class="scrollable-table-wrapper">
+                <div class="table-grid">{{ tabela_receitas | safe }}</div>
+            </div>
         </div>
         
         <div class="table-section">
-            <div class="table-title">Despesas Mensais</div>
-            {{ tabela_despesas | safe }}
-        </div>
-        
-        <div class="table-section">
-            <div class="table-title">Superávit / Déficit Mensal</div>
-            {{ tabela_resumo | safe }}
+            <div class="table-title">Despesas Mensais <small class="mobile-only-hint">(Deslize para ver)</small></div>
+            <div class="scrollable-table-wrapper">
+                <div class="table-grid">{{ tabela_despesas | safe }}</div>
+            </div>
         </div>
     </div>
     
