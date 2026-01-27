@@ -16,6 +16,7 @@ class ColorSettings(BaseSettings):
     """Define as cores semânticas para os relatórios."""
     positive: str = '#107C10'  # Verde escuro acessível
     negative: str = '#D83B01'  # Vermelho/Laranja escuro acessível
+    forecast: str = '#605E5C'  # (Cinza Escuro)
     model_config = SettingsConfigDict(env_prefix='COLOR_', env_file='.env', extra='ignore')
 
 class AppSettings(BaseSettings):
