@@ -64,7 +64,7 @@ Siga os passos abaixo para configurar o ambiente de desenvolvimento.
     DB_DRIVER="ODBC Driver 18 for SQL Server"
 
     # Configurações de E-mail
-    MAIL_RECIPIENT="destinatario1@sebraesp.com.br;destinatario2@sebraesp.com.br"
+    MAIL_RECIPIENT="usuario@sebraesp.com.br;destinatario2@sebraesp.com.br"
     MAIL_SUBJECT_PREFIX="Prévia Orçamento"
     ```
 
