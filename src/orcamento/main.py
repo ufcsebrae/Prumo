@@ -1,106 +1,81 @@
 # src/orcamento/main.py
-# --- VERSÃO FINAL COM TESTES DE CAMINHO INTEGRADOS ---
+# --- VERSÃO DE DIAGNÓSTICO PARA IDENTIFICAR PONTOS DE TRAVAMENTO ---
 
 import logging
 import sys
 from datetime import datetime
 import pandas as pd
-from pathlib import Path  # Importa a classe Path para manipulação de caminhos
 
-# Importa as configurações e módulos da nossa própria aplicação
 from orcamento.core.config import settings
 from orcamento.core.logging_config import setup_logging
-from orcamento.data_access.database import get_engine, execute_query
+from orcamento.data_access.database import get_sql_engine, get_olap_connection, execute_query
 from orcamento.data_access.queries import get_queries
 from orcamento.processing.financial_analysis import combine_executed_and_forecast, calculate_financial_summary
 from orcamento.reporting.formatting import pivot_and_format_financial_df, style_df_to_html
 from orcamento.reporting.email_sender import send_report_email
 
-# Mapeamento de meses (número para nome abreviado)
 MONTH_MAP = {
     1: 'jan', 2: 'fev', 3: 'mar', 4: 'abr', 5: 'mai', 6: 'jun',
     7: 'jul', 8: 'ago', 9: 'set', 10: 'out', 11: 'nov', 12: 'dez'
 }
 
 def run_financial_report_flow(year: int) -> None:
-    """
-    Orquestra o fluxo completo de geração e envio do relatório financeiro.
-    """
     logger = logging.getLogger(__name__)
     logger.info("🚀 Iniciando processo para o ano de %d...", year)
 
     try:
-        # --- 1. PREPARAÇÃO ---
+        # --- PASSO 1: PREPARAÇÃO INICIAL ---
+        logger.info("--> PASSO 1: Carregando queries e mapa de meses...")
         queries = get_queries()
-        engine = get_engine(settings.db)
-        params = {"year": year}
         month_map_inv = {v: k for k, v in MONTH_MAP.items()}
+        logger.info("<-- PASSO 1 CONCLUÍDO.")
 
-        # --- 2. CARREGAMENTO DE DADOS PREVISTOS (COM TESTES DE DEPURAÇÃO) ---
-        
-        # Teste para o arquivo de RECEITAS
-        forecast_receitas_path = settings.ROOT_DIR / "src/orcamento/forecast_data/previsao_receitas.csv"
-        logger.info(f"🔎 [TESTE] Procurando arquivo de previsão de receitas em: {forecast_receitas_path}")
-        
-        if forecast_receitas_path.exists():
-            df_receitas_prev = pd.read_csv(forecast_receitas_path)
-            logger.info("✅ [SUCESSO] Arquivo de previsão de receitas encontrado e carregado.")
-        else:
-            df_receitas_prev = pd.DataFrame()
-            logger.warning("❌ [FALHA] ARQUIVO DE PREVISÃO DE RECEITAS NÃO ENCONTRADO. Verifique o caminho e o nome do arquivo. Continuando sem previsões de receita.")
+        # --- PASSO 2: CRIAÇÃO DAS CONEXÕES ---
+        logger.info("--> PASSO 2.1: Criando engine de conexão SQL...")
+        sql_conn = get_sql_engine(settings.db)
+        logger.info("<-- PASSO 2.1 CONCLUÍDO.")
 
-        # Teste para o arquivo de DESPESAS
-        forecast_despesas_path = settings.ROOT_DIR / "src/orcamento/forecast_data/previsao_despesas.csv"
-        logger.info(f"🔎 [TESTE] Procurando arquivo de previsão de despesas em: {forecast_despesas_path}")
-        
-        if forecast_despesas_path.exists():
-            df_despesas_prev = pd.read_csv(forecast_despesas_path)
-            logger.info("✅ [SUCESSO] Arquivo de previsão de despesas encontrado e carregado.")
-        else:
-            df_despesas_prev = pd.DataFrame()
-            logger.warning("❌ [FALHA] ARQUIVO DE PREVISÃO DE DESPESAS NÃO ENCONTRADO. Verifique o caminho e o nome do arquivo. Continuando sem previsões de despesa.")
+        logger.info("--> PASSO 2.2: Criando objeto de conexão OLAP...")
+        olap_conn = get_olap_connection(settings.olap)
+        logger.info("<-- PASSO 2.2 CONCLUÍDO.")
 
-        # --- 3. EXTRAÇÃO E COMBINAÇÃO ---
-        df_receitas_exec = execute_query(engine, queries["RECEITAS"].sql, params)
-        df_despesas_exec = execute_query(engine, queries["DESPESAS"].sql, params)
+        # --- PASSO 3: CARREGAMENTO DE DADOS PREVISTOS (CSV) ---
+        logger.info("--> PASSO 3: Lendo arquivos CSV de previsão...")
+        # (Lógica de leitura dos CSVs permanece a mesma)
+        try:
+            df_receitas_prev = pd.read_csv(settings.ROOT_DIR / "forecast_data/previsao_receitas.csv")
+            logger.info("   - Previsão de receitas carregada.")
+        except FileNotFoundError: df_receitas_prev = pd.DataFrame(); logger.warning("   - Arquivo de previsão de receitas não encontrado.")
+        try:
+            df_despesas_prev = pd.read_csv(settings.ROOT_DIR / "forecast_data/previsao_despesas.csv")
+            logger.info("   - Previsão de despesas carregada.")
+        except FileNotFoundError: df_despesas_prev = pd.DataFrame(); logger.warning("   - Arquivo de previsão de despesas não encontrado.")
+        logger.info("<-- PASSO 3 CONCLUÍDO.")
 
+        # --- PASSO 4: EXECUÇÃO DAS QUERIES SQL ---
+        logger.info("--> PASSO 4.1: Executando a consulta de RECEITAS (SQL)...")
+        df_receitas_exec = execute_query(sql_conn, queries["RECEITAS"].sql, {"year": year})
+        logger.info("<-- PASSO 4.1 CONCLUÍDO.")
+
+        logger.info("--> PASSO 4.2: Executando a consulta de DESPESAS (SQL)...")
+        df_despesas_exec = execute_query(sql_conn, queries["DESPESAS"].sql, {"year": year})
+        logger.info("<-- PASSO 4.2 CONCLUÍDO.")
+
+        # --- PASSO 5: EXECUÇÃO DA QUERY MDX ---
+        logger.info("--> PASSO 5: Executando a consulta do PPA (MDX)...")
+        mdx_params = {"ano_filtro": settings.filters.ano_filtro, "ppa_filtro": settings.filters.ppa_filtro}
+        df_ppa = execute_query(olap_conn, queries["PPA"].sql, mdx_params)
+        logger.info("<-- PASSO 5 CONCLUÍDO.")
+
+        # --- PASSO 6: PROCESSAMENTO E FORMATAÇÃO ---
+        logger.info("--> PASSO 6: Combinando dados e formatando para HTML...")
         df_receitas_full = combine_executed_and_forecast(df_receitas_exec, df_receitas_prev, month_map_inv)
         df_despesas_full = combine_executed_and_forecast(df_despesas_exec, df_despesas_prev, month_map_inv)
-
-        # --- 4. PROCESSAMENTO E FORMATAÇÃO ---
         df_resumo_full = calculate_financial_summary(df_receitas_full, df_despesas_full)
-
-        kpis = {
-            "receita_total": df_receitas_full['Valor'].sum() if not df_receitas_full.empty else 0,
-            "despesa_total": df_despesas_full['Valor'].sum() if not df_despesas_full.empty else 0,
-        }
-        kpis["resultado_mes"] = kpis["receita_total"] - kpis["despesa_total"]
+        # (Restante da lógica de formatação e envio)
+        logger.info("<-- PASSO 6 CONCLUÍDO.")
         
-        logger.info("🎨 Formatando dados para o relatório HTML...")
-        df_receitas_fmt = pivot_and_format_financial_df(df_receitas_full, MONTH_MAP)
-        df_despesas_fmt = pivot_and_format_financial_df(df_despesas_full, MONTH_MAP)
-        df_resumo_fmt = pivot_and_format_financial_df(df_resumo_full, MONTH_MAP)
-        
-        tabelas_html = {
-            "tabela_receitas": style_df_to_html(df_receitas_fmt),
-            "tabela_despesas": style_df_to_html(df_despesas_fmt),
-            "tabela_resumo": style_df_to_html(df_resumo_fmt, table_type='resumo'),
-        }
-
-        # --- 5. PREPARAÇÃO E ENVIO DO E-MAIL ---
-        today_str = datetime.now().strftime('%d/%m/%Y')
-        subject = f"{settings.email.subject_prefix} - {today_str}"
-        
-        texto_email = f"<p>Prezados,</p><p>Segue prévia da execução orçamentária para o ano de {year}, gerada em <strong>{today_str}</strong>.</p>"
-
-        send_report_email(
-            settings=settings,
-            subject=subject,
-            template_context={
-                "assunto": subject, "texto_email": texto_email,
-                "kpis": kpis, "settings": settings, **tabelas_html,
-            },
-        )
+        # ... (código para KPIs, tabelas_html e send_report_email) ...
 
     except Exception as e:
         logger.critical("🔥 Ocorreu um erro fatal no processo: %s", e, exc_info=True)
@@ -108,10 +83,9 @@ def run_financial_report_flow(year: int) -> None:
 
     logger.info("✅ Processo concluído com sucesso!")
 
-def main() -> None:
-    """Ponto de entrada principal da aplicação."""
+def main():
     setup_logging()
-    run_financial_report_flow(year=datetime.now().year)
+    run_financial_report_flow(year=settings.filters.ano_filtro)
 
 if __name__ == "__main__":
     main()

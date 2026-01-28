@@ -11,6 +11,8 @@ dependencies = [
     "pydantic-settings",
     "jinja2",
     "pywin32",
+    "pyadomd",      
+    "pythonnet", 
 ]
 
 [tool.setuptools.packages.find]
