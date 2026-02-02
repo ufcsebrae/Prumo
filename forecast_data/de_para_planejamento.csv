@@ -1,0 +1,31 @@
+﻿Natureza_Planejamento,Grupo_Execucao,Tipo
+Pessoal,"PESSOAL, ENC. E BEN.SOCIAIS",Despesa
+Encargos Sociais,"PESSOAL, ENC. E BEN.SOCIAIS",Despesa
+Benefícios Sociais,"PESSOAL, ENC. E BEN.SOCIAIS",Despesa
+Serviços Especializados,SERVIÇOS PROFISSIONAIS E CONTRATADOS,Despesa
+Serviços Contratados,SERVIÇOS PROFISSIONAIS E CONTRATADOS,Despesa
+Encargos Sociais s/Serviços de Terceiros,SERVIÇOS PROFISSIONAIS E CONTRATADOS,Despesa
+Despesas com Viagens,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Aluguéis e Encargos,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+"Divulgação, Anúncios, Publicidade e Propaganda",CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Serviços Gráficos e de Reprodução,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Serviços de Comunicação em Geral,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Materiais de Consumo,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Demais Custos e Despesas Gerais,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Doações e Subvenções,CUSTOS E DESPESAS DE OPERACIONALIZAÇÃO,Despesa
+Despesas Tributárias,ENCARGOS DIVERSOS E PERDAS,Despesa
+Despesas Financeiras,ENCARGOS DIVERSOS E PERDAS,Despesa
+Transf. Externas - Convênios c/Outras Entidades,RECUPERAÇÕES DE CONVÊNIOS,Despesa
+Bens Imóveis,IMOBILIZADO,Despesa
+Bens Móveis,DESPESAS ORÇAMENTARIAS,Despesa
+Depósitos Judiciais,DEPÓSITOS JUDICIAIS,Despesa
+Fundo de Empresas Emergentes,APLICAÇÕES EM PROGRAMA DE CRÉDITO,Despesa
+CSO Lei 8.029/90,CONTRIBUIÇÃO SOCIAL,Receita
+CSN Programas e Projetos Nacionais,CONTRIBUIÇÃO SOCIAL DO NACIONAL(CSN),Receita
+"CSN Res. CDN 10/95 (20%)",CONTRIBUIÇÃO SOCIAL,Receita
+Contrato Interno com Sebrae/NA,CONTRIBUIÇÃO SOCIAL DO NACIONAL(CSN),Receita
+"Convênios, Subvenções e Auxílios","RECEITAS DE CONVÊNIOS, SUBVENÇÕES E AUXÍLIOS",Receita
+Empresas Beneficiadas,RECEITAS DE EMPRESAS BENEFICIADAS,Receita
+Rendimentos de Aplicações Financeiras,RECEITAS FINANCEIRAS,Receita
+Outras Receitas,OUTRAS RECEITAS OPERACIONAIS,Receita
+Saldo Financ. Exerc. Anterior,,Receita

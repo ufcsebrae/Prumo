@@ -1,4 +1,5 @@
 # src/orcamento/core/config.py
+# --- ATUALIZADO COM O FILTRO DE MÊS ---
 
 from pathlib import Path
 from pydantic import Field
@@ -10,28 +11,29 @@ class DatabaseSettings(BaseSettings):
     driver: str = Field(..., alias='DB_DRIVER')
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-# --- NOVA CLASSE PARA CONFIGURAÇÕES OLAP ---
-class OLAPSettings(BaseSettings):
-    source: str = Field(..., alias='OLAP_SOURCE')
-    catalog: str = Field(..., alias='OLAP_CATALOG')
-    provider: str = Field(..., alias='OLAP_PROVIDER')
-    adomd_dll_path: str = Field(..., alias='ADOMD_DLL_PATH')
+class EmailSettings(BaseSettings):
+    recipient: str = Field(..., alias='MAIL_RECIPIENT')
+    subject_prefix: str = Field(..., alias='MAIL_SUBJECT_PREFIX')
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-# --- NOVA CLASSE PARA FILTROS DE NEGÓCIO ---
+# --- CLASSE DE FILTRO ATUALIZADA ---
 class FilterSettings(BaseSettings):
     ppa_filtro: str = Field(..., alias='PPA_FILTRO')
     ano_filtro: int = Field(..., alias='ANO_FILTRO')
+    mes_filtro: int = Field(12, alias='MES_FILTRO') # <-- NOVA OPÇÃO. Padrão 12 (dezembro)
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
+# ------------------------------------
 
 class ColorSettings(BaseSettings):
-    positive: str = '#107C10'; negative: str = '#D83B01'; forecast: str = '#605E5C'
-    model_config = SettingsConfigDict(env_prefix='COLOR_', env_file='.env', extra='ignore')
+    positive: str = '#107C10'
+    negative: str = '#D83B01'
+    forecast_manual: str = '#D83B01'
+    forecast_system: str = '#605E5C'
 
 class AppSettings(BaseSettings):
     """Agregador de todas as configurações da aplicação."""
     db: DatabaseSettings = DatabaseSettings()
-    olap: OLAPSettings = OLAPSettings()
+    email: EmailSettings = EmailSettings()
     filters: FilterSettings = FilterSettings()
     colors: ColorSettings = ColorSettings()
     

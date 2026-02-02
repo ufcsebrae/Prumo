@@ -10,9 +10,7 @@ dependencies = [
     "pyodbc",
     "pydantic-settings",
     "jinja2",
-    "pywin32",
-    "pyadomd",      
-    "pythonnet", 
+    "pywin32"
 ]
 
 [tool.setuptools.packages.find]

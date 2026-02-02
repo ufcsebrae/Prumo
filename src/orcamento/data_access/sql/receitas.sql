@@ -1,5 +1,6 @@
 -- Retorna os dados de receita em formato longo (normalizado) para um ano específico.
--- O parâmetro :year será preenchido pela aplicação Python.
+-- O parâmetro de ano será preenchido pela aplicação Python.
+
 SELECT
     CASE WHEN UPPER(DESCNVL4) = 'CONTRIBUIÇÃO SOCIAL DO NACIONAL(CSN)' THEN 'CONTRIBUIÇÃO SOCIAL DO NACIONAL (CSN)' ELSE UPPER(DESCNVL3) END AS 'Grupo',
     MONTH(DATA) AS 'MesNum',

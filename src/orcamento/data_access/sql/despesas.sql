@@ -1,5 +1,6 @@
 -- Retorna os dados de despesa em formato longo (normalizado) para um ano específico.
--- O parâmetro :year será preenchido pela aplicação Python.
+-- O parâmetro de ano será preenchido pela aplicação Python.
+
 SELECT
     UPPER(DESCNVL3) AS 'Grupo',
     MONTH(DATA) AS 'MesNum',
@@ -9,7 +10,6 @@ FROM
 WHERE
     YEAR(DATA) = :year
     AND DESCNVL1 IN ('DESPESAS', 'DESPESAS EXCLUSIVAS DO ORÇAMENTO')
-
 GROUP BY
     DESCNVL3,
     MONTH(DATA)

@@ -1,78 +1,94 @@
 # src/orcamento/processing/financial_analysis.py
-# --- VERSÃO FINAL QUE MANTÉM VALORES SEPARADOS PARA A CAMADA DE VISUALIZAÇÃO ---
+# --- ATUALIZADO COM A NOVA REGRA DE NEGÓCIO PARA O VALOR FINAL ---
 
 import pandas as pd
+import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
 
-def combine_executed_and_forecast(
-    df_executado: pd.DataFrame, 
-    df_previsto: pd.DataFrame, 
+def process_planning_data(
+    df_planejado: pd.DataFrame, 
+    df_de_para: pd.DataFrame,
     month_map_inv: dict
 ) -> pd.DataFrame:
-    """
-    Combina dados executados e previstos, mantendo os valores em colunas separadas
-    ('Valor_exec', 'Valor_prev') para uso na camada de formatação.
-    """
-    df_executado = df_executado.copy()
+    # (Esta função não precisa de alterações)
+    if df_planejado.empty or df_de_para.empty: return pd.DataFrame()
+    df_de_para.columns = ['Natureza_Planejamento', 'Grupo_Execucao', 'Tipo_Fluxo']
+    df_de_para['Natureza_Planejamento'] = df_de_para['Natureza_Planejamento'].str.upper().str.strip()
+    df_planejado['Descrição Natureza'] = df_planejado['Descrição Natureza'].str.upper().str.strip()
+    df_mapped = pd.merge(df_planejado, df_de_para, left_on='Descrição Natureza', right_on='Natureza_Planejamento', how='inner')
+    df_agg = df_mapped.groupby(['Grupo_Execucao', 'Mês', 'Tipo_Fluxo'])['Valor'].sum().reset_index()
+    df_agg.rename(columns={'Grupo_Execucao': 'Grupo', 'Valor': 'Planejado'}, inplace=True)
+    df_agg.rename(columns={'Mês': 'MesNum'}, inplace=True)
+    df_agg['MesNum'] = pd.to_numeric(df_agg['MesNum'], errors='coerce').astype('Int64')
+    logger.info(f"Dados de planejamento mapeados e agregados com sucesso para {len(df_agg)} linhas.")
+    return df_agg
+
+def combinar_fontes_financeiras(
+    df_planejado_sistema: pd.DataFrame,
+    df_executado: pd.DataFrame,
+    df_previsao_manual: pd.DataFrame,
+    month_map_inv: dict
+) -> pd.DataFrame:
+    """Combina as fontes e calcula o 'Valor_Final' com a nova regra de negócio."""
+    df_planejado = df_planejado_sistema.rename(columns={'Planejado': 'Planejado'})
+    df_exec = df_executado.rename(columns={'Valor': 'Executado'})
+    df_manual = df_previsao_manual.rename(columns={'Valor': 'Previsão'})
+
+    if not df_manual.empty and 'MesNum' not in df_manual.columns:
+        df_manual['MesNum'] = df_manual['Mes'].str.lower().map(month_map_inv)
+        df_manual['MesNum'] = pd.to_numeric(df_manual['MesNum'], errors='coerce').astype('Int64')
     
-    # Padroniza e prepara os dados executados
-    if not df_executado.empty:
-        df_executado['Grupo'] = df_executado['Grupo'].str.upper().str.strip()
-    else:
-        df_executado = pd.DataFrame(columns=['Grupo', 'MesNum', 'Valor'])
+    for df in [df_planejado, df_exec, df_manual]:
+        if not df.empty and 'Grupo' in df.columns:
+            df['Grupo'] = df['Grupo'].str.upper().str.strip()
 
-    # Renomeia a coluna para clareza
-    df_executado.rename(columns={'Valor': 'Valor_exec'}, inplace=True)
+    merge_cols = ['Grupo', 'MesNum']
+    df_merged = pd.merge(df_planejado, df_exec, on=merge_cols, how='outer')
+    df_merged = pd.merge(df_merged, df_manual, on=merge_cols, how='outer')
 
-    if df_previsto.empty:
-        df_executado['Valor_prev'] = 0 # Garante que a coluna exista
-        return df_executado
-
-    # Padroniza e prepara os dados de previsão
-    df_previsto = df_previsto.copy()
-    df_previsto['Grupo'] = df_previsto['Grupo'].str.upper().str.strip()
-    df_previsto['MesNum'] = df_previsto['Mes'].str.lower().map(month_map_inv)
-    df_previsto = df_previsto.dropna(subset=['MesNum'])
-    df_previsto['MesNum'] = df_previsto['MesNum'].astype(int)
+    cols_to_fill = ['Planejado', 'Executado', 'Previsão']
+    for col in cols_to_fill:
+        if col not in df_merged.columns: df_merged[col] = 0.0
+    df_merged[cols_to_fill] = df_merged[cols_to_fill].fillna(0)
     
-    # Agrega os dados de previsão em caso de múltiplas entradas no CSV
-    df_previsto_agg = df_previsto.groupby(['Grupo', 'MesNum'])['Valor'].sum().reset_index()
-    df_previsto_agg.rename(columns={'Valor': 'Valor_prev'}, inplace=True)
-
-    # Faz o merge, mantendo todas as linhas de ambos
-    df_merged = pd.merge(
-        df_executado,
-        df_previsto_agg,
-        on=['Grupo', 'MesNum'],
-        how='outer'
+    # --- NOVA LÓGICA CENTRALIZADA PARA 'Valor_Final' ---
+    condicoes_final = [
+        # 1. Se há Previsão, o valor é o MAIOR entre a Previsão e o que já foi Executado.
+        df_merged['Previsão'] > 0,
+        # 2. Se não há Previsão, mas há Executado, o valor é o Executado.
+        (df_merged['Previsão'] == 0) & (df_merged['Executado'] != 0),
+    ]
+    
+    resultados_final = [
+        df_merged[['Previsão', 'Executado']].max(axis=1),
+        df_merged['Executado'],
+    ]
+    
+    # 3. Fallback: Se não há Previsão nem Executado, usa o Planejado como valor final.
+    df_merged['Valor_Final'] = np.select(
+        condicoes_final, 
+        resultados_final, 
+        default=df_merged['Planejado']
     )
-
-    # Preenche com 0 onde não há valor, para garantir que os cálculos funcionem
-    df_merged.fillna({'Valor_exec': 0, 'Valor_prev': 0}, inplace=True)
+    # ----------------------------------------------------
     
-    return df_merged
+    # Retorna o DataFrame com a nova coluna, que será usada por todos os outros módulos
+    df_final = df_merged[['Grupo', 'MesNum', 'Planejado', 'Executado', 'Previsão', 'Valor_Final']]
+    return df_final.sort_values(by=['MesNum', 'Grupo']).reset_index(drop=True)
+
 
 def calculate_financial_summary(
-    df_receitas: pd.DataFrame, df_despesas: pd.DataFrame
+    df_receitas: pd.DataFrame, 
+    df_despesas: pd.DataFrame
 ) -> pd.DataFrame:
-    """Calcula o superávit/déficit a partir dos dataframes que contêm valores separados."""
-    # Para o resumo, o "Valor" é a soma do executado e previsto
-    df_receitas['Valor'] = df_receitas['Valor_exec'] + df_receitas['Valor_prev']
-    df_despesas['Valor'] = df_despesas['Valor_exec'] + df_despesas['Valor_prev']
-
-    df_rec = df_receitas.groupby('MesNum')['Valor'].sum()
-    df_des = df_despesas.groupby('MesNum')['Valor'].sum()
-    total_receitas, total_despesas = df_rec.align(df_des, fill_value=0)
-    
-    df_resumo = (total_receitas - total_despesas).reset_index()
-    df_resumo = df_resumo.rename(columns={0: 'Valor'})
+    # (Esta função não precisa de alterações)
+    logger.info("Calculando resumo financeiro (Superávit/Déficit)...")
+    value_cols = ['Planejado', 'Executado', 'Previsão', 'Valor_Final']
+    df_rec_agg = df_receitas.groupby('MesNum')[value_cols].sum() if not df_receitas.empty else pd.DataFrame(columns=value_cols)
+    df_des_agg = df_despesas.groupby('MesNum')[value_cols].sum() if not df_despesas.empty else pd.DataFrame(columns=value_cols)
+    rec_aligned, des_aligned = df_rec_agg.align(df_des_agg, fill_value=0)
+    df_resumo = (rec_aligned - des_aligned).reset_index()
     df_resumo['Grupo'] = 'SUPERÁVIT/DÉFICIT'
-    
-    # O resumo precisa das colunas separadas para a formatação funcionar
-    df_resumo['Valor_exec'] = df_resumo['Valor']
-    df_resumo['Valor_prev'] = 0
-    df_resumo['Tipo'] = 'resumo' # Adiciona o tipo para a estilização
-
     return df_resumo
